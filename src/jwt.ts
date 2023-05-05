@@ -1,30 +1,37 @@
-import JWT, {JwtPayload} from 'jsonwebtoken';
+import * as jose from "jose";
 import {jwt} from './types';
 
-const getEnv = () => {
-  const {JWT_SECRET} = process.env;
-  return {JWT_SECRET};
+export const ed25519PrivateToPublic = async (privateKey: jose.KeyLike) => {
+  const jwk = await jose.exportJWK(privateKey);
+  delete jwk.d;
+  return jose.importJWK(jwk, "EdDSA");
 };
 
-export const generate = ({
+export const generate = async ({
   payload,
-  secret = null,
+  secret,
   expiresIn = null,
 }: jwt.generate) => {
-  const {JWT_SECRET} = getEnv();
-  const opts = expiresIn ? {expiresIn} : {};
-  return JWT.sign(
-      {...payload, timestamp: Date.now()},
-      secret || JWT_SECRET,
-      opts,
-  );
+  const publicKey = await ed25519PrivateToPublic(secret);
+  const pubkeyJWK = await jose.exportJWK(publicKey);
+  const header = {
+    alg: "EdDSA",
+    jwk: pubkeyJWK,
+  };
+
+  let token = new jose.SignJWT(payload).setProtectedHeader(header);
+
+  if (expiresIn) {
+    token = token.setExpirationTime(expiresIn);
+  }
+
+  return token.sign(secret);
 };
 
-export const verify = async ({token, secret = null}: jwt.verify) => {
-  const {JWT_SECRET} = getEnv();
+export const verify = async ({token, secret}: jwt.verify) => {
   try {
     token = token.replace('Bearer ', '');
-    const data: JwtPayload | any = JWT.verify(token, secret || JWT_SECRET);
+    const data = jose.jwtVerify(token, secret);
 
     if (!Object.keys(data).length) return false;
 

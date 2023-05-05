@@ -4,7 +4,7 @@ export * as jobs from './src/jobs';
 export * as jwt from './src/jwt';
 export * as mail from './src/mail';
 export * as payments from './src/payments';
-export {response} from './src/response';
+export {response, rethrow} from './src/response';
 export * as sms from './src/sms';
 export * as storage from './src/storage';
 export * as telegram from './src/telegram';

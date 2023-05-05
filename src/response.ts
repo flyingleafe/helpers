@@ -18,3 +18,11 @@ export const response = async (
 
   if (error) telegram.notify({error});
 };
+
+export const rethrow = async (promise: Promise<any>) => {
+  const data = await promise;
+  if (!data.status) {
+    throw new Error(data.message);
+  }
+  return data;
+}
